@@ -15,9 +15,37 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::factory()->create([
+        $user = User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
+            'password' => \Hash::make('1234'),
+        ]);
+
+        $planMonthly = \App\Models\Plan::create([
+            'name' => 'Monthly',
+            'description' => 'Monthly subscription',
+            'price' => 2,
+            'currency' => 'USD',
+            'duration' => 1,
+            'trial_period_days' => 0,
+        ]);
+
+        $planYearly = \App\Models\Plan::create([
+            'name' => 'Yearly',
+            'description' => 'Yearly subscription',
+            'price' => 18,
+            'currency' => 'USD',
+            'duration' => 12,
+            'trial_period_days' => 0,
+        ]);
+
+        $planTrial = \App\Models\Plan::create([
+            'name' => 'Trial',
+            'description' => 'Free trial subscription',
+            'price' => 0,
+            'currency' => 'USD',
+            'duration' => 1,
+            'trial_period_days' => 30,
         ]);
     }
 }

@@ -16,9 +16,9 @@ return new class extends Migration {
             $table->string('description')->nullable();
             $table->string('price');
             $table->string('currency');
-            $table->string('duration');
-            $table->integer('trial_period_days')->default(0);
-            $table->boolean('status')->default(true);
+            $table->string('interval_unit');
+            $table->integer('interval_count');
+            $table->string('status');
             $table->string('paypal_plan_id')->nullable();
             $table->string('stripe_plan_id')->nullable();
             $table->timestamps();

@@ -1,6 +1,15 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PaypalController;
+use App\Http\Controllers\HomeController;
 
-Route::get('/', [\App\Http\Controllers\HomeController::class, 'index'])->name('home');
+Route::get('/', [HomeController::class, 'index'])->name('home');
+
+Route::controller(PaypalController::class)->group(function () {
+    Route::get('/create-order', 'createOrder');
+    Route::post('/complete-order', 'completeOrder');
+    Route::get('/create-product', 'createProduct');
+    Route::get('/create-plans', 'createPlans');
+});
 

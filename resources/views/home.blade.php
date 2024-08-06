@@ -14,8 +14,13 @@
     @vite('resources/css/app.css')
     @vite('resources/js/app.js')
 
-    <script src="https://www.paypal.com/sdk/js?client-id={{ env('PAYPAL_CLIENT_ID') }}&vault=true&intent=subscription">
+    <script src="https://www.paypal.com/sdk/js?client-id={{ env('PAYPAL_CLIENT_ID') }}">
     </script>
+    <script src="https://js.braintreegateway.com/web/dropin/1.43.0/js/dropin.min.js"></script>
+    <!-- Load the client component. -->
+    <script src="https://js.braintreegateway.com/web/3.103.0/js/client.min.js"></script>
+    <!-- Load the PayPal Checkout component. -->
+    <script src="https://js.braintreegateway.com/web/3.103.0/js/paypal-checkout.min.js"></script>
 </head>
 
 <body class="font-sans antialiased">
@@ -36,10 +41,14 @@
             @endforeach
         </div>
         <div class="mt-8 mx-auto w-80" id="paypal-button-container"></div>
+        <div id="dropin-container"></div>
+        <div id="paypal-button"></div>
+
     </div>
 
-    <script>
+    {{-- <script>
         let selectedPlan = null;
+
         function setPlanId(planId) {
             console.log(planId);
             selectedPlan = planId;
@@ -96,6 +105,53 @@
             }
 
         }).render('#paypal-button-container'); // Renders the PayPal button
+    </script> --}}
+
+    {{-- Braintree --}}
+    <script>
+        // Step two: create a dropin instance using that container (or a string
+        //   that functions as a query selector such as '#dropin-container')
+        braintree.dropin.create({
+            authorization: '{{ $clientToken }}',
+            container: document.getElementById('dropin-container'),
+            // ...plus remaining configuration
+        }).then((dropinInstance) => {
+            // Use 'dropinInstance' here
+            // Methods documented at https://braintree.github.io/braintree-web-drop-in/docs/current/Dropin.html
+        }).catch((error) => {});
+    </script>
+
+    <script>
+        // Create a client.
+        braintree.client.create({
+            authorization: '{{ $clientToken }}',
+        }, function(clientErr, clientInstance) {
+
+            // Stop if there was a problem creating the client.
+            // This could happen if there is a network error or if the authorization
+            // is invalid.
+            if (clientErr) {
+                console.error('Error creating client:', clientErr);
+                return;
+            }
+
+            // Create a PayPal Checkout component.
+            braintree.paypalCheckout.create({
+                client: clientInstance
+            }, function(paypalCheckoutErr, paypalCheckoutInstance) {
+
+                // Stop if there was a problem creating PayPal Checkout.
+                // This could happen if there was a network error or if it's incorrectly
+                // configured.
+                if (paypalCheckoutErr) {
+                    console.error('Error creating PayPal Checkout:', paypalCheckoutErr);
+                    return;
+                }
+
+                // Load the PayPal JS SDK (see Load the PayPal JS SDK section)
+            });
+
+        });
     </script>
 
 </body>

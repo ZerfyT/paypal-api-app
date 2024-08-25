@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Services\PaypalService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -16,9 +17,12 @@ class HomeController extends Controller
             return Plan::all();
         });
 
-        $paypalService = new PaypalService();
+        $user = User::find(1);
+
+        $userPayments = $user?->payments;
+        $userSubscription = $user?->subscriptions()->where('status', 'ACTIVE')->first();
 
 
-        return view('home', compact('plans'));
+        return view('home', compact('plans', 'user', 'userPayments', 'userSubscription'));
     }
 }

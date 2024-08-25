@@ -4,29 +4,21 @@ namespace App\Services;
 use App\Models\Plan;
 use App\Models\Subscription;
 use Illuminate\Support\Facades\Log;
+use Response;
+use Unirest\Exception;
 use Unirest\Request;
 use Unirest\Request\Body;
 
 class PaypalService
 {
     const API_URL = 'https://api.sandbox.paypal.com/';
-    public string $accessToken;
+    private string $accessToken;
+    private array $headers;
 
     public function __construct()
     {
-
         $this->accessToken = $this->getAccessToken();
-    }
-
-    private function getHeaders(): array
-    {
-
-        return [
-            'Accept' => 'application/json',
-            'Content-Type' => 'application/json',
-            'Authorization' => 'Bearer ' . $this->getAccessToken(),
-            // 'Prefer' => 'return=minimal'
-        ];
+        $this->headers = $this->getHeaders();
     }
 
     private function getAccessToken(): string
@@ -44,8 +36,7 @@ class PaypalService
 
             if ($response->code != 200) {
                 Log::error($response->body->error_description);
-                throw new \Exception($response->body->error_description);
-                // return null;
+                throw new Exception($response->body->error_description);
             }
 
             $this->accessToken = $response->body->access_token;
@@ -56,18 +47,23 @@ class PaypalService
         return $this->accessToken;
     }
 
+    private function getHeaders(): array
+    {
+        return [
+            'Accept' => 'application/json',
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer ' . $this->accessToken,
+            'Prefer' => 'return=representation' // return=minimal
+        ];
+    }
+
     /**
-     * @param string $name
-     * @param mixed $description
-     * @param mixed $category
-     * @param mixed $image_url
-     * @param mixed $home_url
-     * @throws \Exception
+     * @throws \Unirest\Exception
      * @return string|null Paypal Product ID
      */
     public function createProduct(string $name, ?string $description, ?string $category, ?string $image_url, ?string $home_url): ?string
     {
-        $response = Request::post(self::API_URL . 'v1/catalogs/products', $this->getHeaders(), Body::json([
+        $response = Request::post(self::API_URL . 'v1/catalogs/products', $this->headers, Body::json([
             'name' => $name,
             'description' => $description,
             'type' => 'DIGITAL',
@@ -76,10 +72,9 @@ class PaypalService
             'home_url' => $home_url,
         ]));
 
-        if ($response->code != 201) {
+        if ($response->code >= 400) {   // 201 created
             Log::error($response->body->error_description);
-            throw new \Exception($response->body->error_description);
-            // return null;
+            throw new Exception($response->body->error_description);
         }
 
         Log::info('Paypal Product ID: ' . $response->body->id . ' NAME: ' . $response->body->name . ' created successfully');
@@ -88,11 +83,13 @@ class PaypalService
 
 
 
-    public function createPlan(string $productId, string $name, ?string $description, array $billingCycles)
+    /**
+     * @throws \Unirest\Exception
+     * @return string Paypal Plan ID
+     */
+    public function createPlan(string $productId, string $name, ?string $description, array $billingCycles): string
     {
-        // dd($billingCycles);
-
-        $response = Request::post(self::API_URL . 'v1/billing/plans', $this->getHeaders(), Body::json([
+        $response = Request::post(self::API_URL . 'v1/billing/plans', $this->headers, Body::json([
             'product_id' => $productId,
             'name' => $name,
             'status' => 'ACTIVE',
@@ -109,66 +106,90 @@ class PaypalService
             ]
         ]));
 
-        if ($response->code != 201) {
-            dd($response->body);
+        if ($response->code >= 400) {   // 201 created
             Log::error($response->body->error_description);
-            throw new \Exception($response->body->error_description);
-            // return null;
+            throw new Exception($response->body->error_description);
         }
 
         Log::info('Paypal Plan ID: ' . $response->body->id . ' NAME: ' . $response->body->name . ' created successfully');
-        return $response->body;
+        return $response->body->id;
     }
 
-    public function listPlans($productId)
+    /**
+     * @throws \Unirest\Exception
+     * @return array Paypal Plans
+     */
+    public function listPlans(string $productId): array
     {
+        $response = Request::get(self::API_URL . 'v1/billing/plans?product_id=' . $productId, $this->headers);
 
-        $response = Request::get(self::API_URL . 'v1/billing/plans', $this->getHeaders(), Body::json([
-            'product_id' => $productId
-        ]));
-
-        if ($response->code != 200) {
+        if ($response->code >= 400) {   // 200 OK
             Log::error($response->body->error_description);
-            throw new \Exception($response->body->error_description);
-            // return null;
+            throw new Exception($response->body->error_description);
         }
 
         return $response->body->plans;
     }
 
-    public function showPlanDetails($planId)
+    /**
+     * @param string $planId
+     * @throws \Unirest\Exception
+     * @return mixed Paypal Plan
+     */
+    public function showPlanDetails(string $planId)
     {
+        $response = Request::get(self::API_URL . 'v1/billing/plans/' . $planId, $this->headers);
 
-        $response = Request::get(self::API_URL . 'v1/billing/plans/' . $planId, $this->getHeaders());
-
-        if ($response->code != 200) {
-            dd($response->body);
+        if ($response->code >= 400) {   // 200 OK
             Log::error($response->body->error_description);
-            throw new \Exception($response->body->error_description);
-            // return null;
+            throw new Exception($response->body->error_description);
         }
 
         return $response->body;
     }
 
-    public function createSubscription($planId, $customerId)
+    /**
+     * @throws \Unirest\Exception
+     * @return mixed Paypal Subscription
+     */
+    public function createSubscription(string $planId, string $customerId)
     {
-
-        $response = Request::post(self::API_URL . 'v1/billing/subscriptions', $this->getHeaders(), Body::json([
+        $response = Request::post(self::API_URL . 'v1/billing/subscriptions', $this->headers, Body::json([
             'plan_id' => $planId,
-            'customer_id' => $customerId
+            'custom_id' => $customerId
         ]));
+
+        if ($response->code >= 400) {   // 201 created
+            Log::error($response->body->error_description);
+            throw new Exception($response->body->error_description);
+        }
+
+        return $response->body;
+    }
+
+    /**
+     * @throws \Unirest\Exception
+     * @return mixed Paypal Subscription
+     */
+    public function showSubscriptionDetails(string $subscriptionId)
+    {
+        $response = Request::get(self::API_URL . 'v1/billing/subscriptions/' . $subscriptionId, $this->headers);
+
+        if ($response->code >= 400) {   // 200 OK
+            Log::error($response->body->error_description);
+            throw new Exception($response->body->error_description);
+        }
+
+        return $response->body;
     }
 
     public function captureOrder($orderId)
     {
-
-        $response = Request::post(self::API_URL . 'v2/checkout/orders/' . $orderId . '/capture', $this->getHeaders());
+        $response = Request::post(self::API_URL . 'v2/checkout/orders/' . $orderId . '/capture', $this->headers);
 
         if ($response->code != 201 && $response->code != 200) {
-            dd($response->body);
             Log::error($response->body->error_description);
-            throw new \Exception($response->body->error_description);
+            throw new Exception($response->body->error_description);
             // return null;
         }
 
@@ -180,12 +201,11 @@ class PaypalService
     public function showOrderDetails($orderId)
     {
 
-        $response = Request::get(self::API_URL . 'v2/checkout/orders/' . $orderId, $this->getHeaders());
+        $response = Request::get(self::API_URL . 'v2/checkout/orders/' . $orderId, $this->headers);
 
         if ($response->code != 200) {
-            dd($response->body);
             Log::error($response->body->error_description);
-            throw new \Exception($response->body->error_description);
+            throw new Exception($response->body->error_description);
             // return null;
         }
 

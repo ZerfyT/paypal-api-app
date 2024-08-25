@@ -5,23 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Plan;
 use App\Models\Setting;
 use App\Services\PaypalService;
+use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
+use Response;
 
 class PaypalController extends Controller
 {
-    public function createOrder(Request $request)
-    {
-        dd($request->all());
-    }
-
-    public function completeOrder(Request $request)
-    {
-        // dd($data);
-        $paypalService = new PaypalService();
-        $paypalService->captureOrder($request->data->orderID);
-    }
-
     public function createProduct()
     {
         $paypalService = new PaypalService();
@@ -167,5 +158,58 @@ class PaypalController extends Controller
             'status' => $planAnnual->status,
             'paypal_plan_id' => $planAnnual->id,
         ]);
+    }
+
+    public function savePlanstoDB()
+    {
+        $paypalService = new PaypalService();
+        $plans = $paypalService->listPlans(env('PAYPAL_PRODUCT_ID'));
+        // Log::debug($plans);
+        // dd($plans);
+
+        try {
+            foreach ($plans as $plan) {
+                if ($plan->status == 'ACTIVE') {
+                    Plan::create([
+                        'name' => $plan->name,
+                        'description' => $plan->description,
+                        'price' => $plan->billing_cycles[0]->pricing_scheme->fixed_price->value,
+                        'currency' => $plan->billing_cycles[0]->pricing_scheme->fixed_price->currency_code,
+                        'interval_unit' => $plan->billing_cycles[0]->frequency->interval_unit,
+                        'interval_count' => $plan->billing_cycles[0]->frequency->interval_count,
+                        'status' => $plan->status,
+                        'plan_id' => $plan->id,
+                    ]);
+                    Log::info('Plan ID: ' . $plan->id . ' NAME: ' . $plan->name . ' saved to DB successfully');
+                }
+
+            }
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+            return Response::json(['status' => 'error'], 500);
+        }
+
+        return Response::json(['status' => 'success'], 200);
+    }
+
+    public function getSubscriptionDetails()
+    {
+
+        $paypalService = new PaypalService();
+        $subscription = $paypalService->showSubscriptionDetails('I-W59RRB144VJW');
+
+        dd($subscription);
+
+        $startDate = Carbon::parse($subscription->start_time)->format('Y-m-d H:i:s');
+        $endDate = Carbon::parse($subscription->billing_info->next_billing_time)->format('Y-m-d H:i:s');
+        $planId = $subscription->plan_id;
+        $paymentDate = Carbon::parse($subscription->billing_info->last_payment->time)->format('Y-m-d H:i:s');
+
+        Log::debug('Start Date: ' . $startDate);
+        // Log::debug('End Date: ' . $endDate);
+        Log::debug('Plan Id: ' . $planId);
+        Log::debug('Payment Date: ' . $paymentDate);
+
+        dd($subscription);
     }
 }

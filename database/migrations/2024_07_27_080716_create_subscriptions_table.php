@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignIdFor(\App\Models\User::class, 'user_id');
             $table->foreignIdFor(\App\Models\Plan::class, 'plan_id');
-            $table->foreignIdFor(\App\Models\Payment::class, 'payment_id')->nullable();
-            $table->string('paypal_subscription_id');
+            $table->foreignIdFor(\App\Models\Payment::class, 'payment_id');
+            $table->string('subscription_id');
             $table->dateTime('start_date');
             $table->dateTime('end_date');
             $table->string('status');

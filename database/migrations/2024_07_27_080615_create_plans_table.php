@@ -19,8 +19,7 @@ return new class extends Migration {
             $table->string('interval_unit');
             $table->integer('interval_count');
             $table->string('status');
-            $table->string('paypal_plan_id')->nullable();
-            $table->string('stripe_plan_id')->nullable();
+            $table->string('plan_id')->nullable();
             $table->timestamps();
         });
     }

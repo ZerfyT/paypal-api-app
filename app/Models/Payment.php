@@ -13,7 +13,12 @@ class Payment extends Model
 
     public function subscription()
     {
-        return $this->hasOne(Subscription::class);
+        return $this->belongsTo(Subscription::class);
+    }
+
+    public function plan()
+    {
+        return $this->belongsTo(Plan::class);
     }
 
     public function user()

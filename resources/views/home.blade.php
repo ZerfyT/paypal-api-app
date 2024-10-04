@@ -16,6 +16,8 @@
 
     <script src="https://www.paypal.com/sdk/js?client-id={{ env('PAYPAL_CLIENT_ID') }}&vault=true&intent=subscription">
     </script>
+
+    @lemonJS
 </head>
 
 <body class="font-sans antialiased">
@@ -36,6 +38,10 @@
             @endforeach
         </div>
         <div class="mt-8 mx-auto w-80" id="paypal-button-container"></div>
+        
+        <x-lemon-button :href="$checkout" class="px-8 py-4">
+            Buy Product
+        </x-lemon-button>
     </div>
 
     <script>

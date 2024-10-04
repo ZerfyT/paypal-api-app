@@ -21,31 +21,34 @@ class DatabaseSeeder extends Seeder
             'password' => \Hash::make('1234'),
         ]);
 
-        // $planMonthly = \App\Models\Plan::create([
-        //     'name' => 'Monthly',
-        //     'description' => 'Monthly subscription',
-        //     'price' => 2,
-        //     'currency' => 'USD',
-        //     'duration' => 1,
-        //     'trial_period_days' => 0,
-        // ]);
+        $planMonthly = \App\Models\Plan::create([
+            'name' => 'Monthly',
+            'description' => 'Monthly subscription',
+            'price' => 2,
+            'currency' => 'USD',
+            'interval_unit' => 'month',
+            'interval_count' => 1,
+            'trial_period_days' => 0,
+        ]);
 
-        // $planYearly = \App\Models\Plan::create([
-        //     'name' => 'Yearly',
-        //     'description' => 'Yearly subscription',
-        //     'price' => 18,
-        //     'currency' => 'USD',
-        //     'duration' => 12,
-        //     'trial_period_days' => 0,
-        // ]);
+        $planYearly = \App\Models\Plan::create([
+            'name' => 'Yearly',
+            'description' => 'Yearly subscription',
+            'price' => 18,
+            'currency' => 'USD',
+            'interval_unit' => 'month',
+            'interval_count' => 12,
+            'trial_period_days' => 0,
+        ]);
 
-        // $planTrial = \App\Models\Plan::create([
-        //     'name' => 'Trial',
-        //     'description' => 'Free trial subscription',
-        //     'price' => 0,
-        //     'currency' => 'USD',
-        //     'duration' => 1,
-        //     'trial_period_days' => 30,
-        // ]);
+        $planTrial = \App\Models\Plan::create([
+            'name' => 'Trial',
+            'description' => 'Free trial subscription',
+            'price' => 0,
+            'currency' => 'USD',
+            'interval_unit' => 'day',
+            'interval_count' => 1,
+            'trial_period_days' => 30,
+        ]);
     }
 }

@@ -18,7 +18,8 @@ return new class extends Migration {
             $table->string('currency');
             $table->string('interval_unit');
             $table->integer('interval_count');
-            $table->string('status');
+            $table->integer('trial_period_days')->default(0);
+            $table->string('status')->default('active');
             $table->string('paypal_plan_id')->nullable();
             $table->string('stripe_plan_id')->nullable();
             $table->timestamps();

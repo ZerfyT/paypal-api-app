@@ -14,8 +14,7 @@
     @vite('resources/css/app.css')
     @vite('resources/js/app.js')
 
-    <script src="https://www.paypal.com/sdk/js?client-id={{ env('PAYPAL_CLIENT_ID') }}">
-    </script>
+    <script src="https://www.paypal.com/sdk/js?client-id={{ env('PAYPAL_CLIENT_ID') }}"></script>
     <script src="https://js.braintreegateway.com/web/dropin/1.43.0/js/dropin.min.js"></script>
     <!-- Load the client component. -->
     <script src="https://js.braintreegateway.com/web/3.103.0/js/client.min.js"></script>
@@ -114,6 +113,9 @@
         braintree.dropin.create({
             authorization: '{{ $clientToken }}',
             container: document.getElementById('dropin-container'),
+            paypal: {
+                flow: 'vault'
+            }
             // ...plus remaining configuration
         }).then((dropinInstance) => {
             // Use 'dropinInstance' here

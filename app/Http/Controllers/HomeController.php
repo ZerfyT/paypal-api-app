@@ -35,4 +35,45 @@ class HomeController extends Controller
 
         return view('home', compact('plans', 'clientToken'));
     }
+
+    public function pay(Request $request)
+    {
+        dd($request->all());
+        $data = $request->all();
+        $nonce = $request->input('payment_method_nonce');
+        $planId = $request->input('plan_id');
+
+        $braintreeService = new BraintreeService();
+        $gateway = $braintreeService->gateway;
+
+        $customer = $gateway->customer()->create([
+            'firstName' => 'John',
+            'lastName' => 'Doe',
+            'email' => 'john.doe@example.com',
+            'paymentMethodNonce' => $nonce
+        ]);
+
+        if ($customer->success) {
+            $customerId = $customer->customer->id;
+            $paymentMethodToken = $customer->customer->paymentMethods[0]->token;
+
+            $subscriptionResult = $gateway->subscription()->create([
+                'paymentMethodToken' => $paymentMethodToken,
+                'planId' => $planId
+            ]);
+
+            if ($subscriptionResult->success) {
+                echo "Subscription created successfully. Subscription ID: " . $subscriptionResult->subscription->id;
+            } else {
+                echo "Error creating subscription: " . $subscriptionResult->message;
+            }
+        } else {
+            echo "Error creating customer: " . $customer->message;
+        }
+
+        Log::info($data);
+        Log::info($customer);
+        Log::info($subscriptionResult);
+        return view('home');
+    }
 }

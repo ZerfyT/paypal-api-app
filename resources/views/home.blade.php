@@ -39,120 +39,61 @@
                 </div>
             @endforeach
         </div>
-        <div class="mt-8 mx-auto w-80" id="paypal-button-container"></div>
-        <div id="dropin-container"></div>
-        <div id="paypal-button"></div>
+        <form id="payment-form" action="{{ route('pay') }}" method="post">
+            <div id="paypal-button"></div>
+            <input type="hidden" id="payment_method_nonce" name="payment_method_nonce">
+            <input type="hidden" name="plan_id" value="nsvj">
+        </form>
 
     </div>
 
-    {{-- <script>
-        let selectedPlan = null;
-
-        function setPlanId(planId) {
-            console.log(planId);
-            selectedPlan = planId;
-        }
-
-        paypal.Buttons({
-            style: {
-                shape: 'rect',
-                color: 'gold',
-                layout: 'horizontal',
-                label: 'paypal'
-            },
-            onClick: function() {
-                console.log('clicked');
-                selectedPlan = selectedPlan;
-                console.log('plan :' + selectedPlan);
-                // Fetch Paypal Plan Id
-                // fetch('/plans/' + selectedPlan)
-                //     .then(response => response.json())
-                //     .then(data => {
-                //         console.log(data);
-                //     });
-            },
-            createSubscription: function(data, actions) {
-                return actions.subscription.create({
-                    plan_id: selectedPlan
-                });
-            },
-            onApprove: function(data) {
-                console.log('subscription approved');
-                console.log(data);
-                fetch('/complete-order', {
-                    method: 'post',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify({
-                        data: data
-                    })
-                }).then(function() {
-                    alert('subscription created');
-                });
-            },
-            onCancel: function(data) {
-                console.log('subscription cancelled');
-                console.log(data);
-            },
-            onError: function(data) {
-                console.log('subscription error');
-                console.log(data);
-                alert('error');
-            }
-
-        }).render('#paypal-button-container'); // Renders the PayPal button
-    </script> --}}
-
-    {{-- Braintree --}}
     <script>
-        // Step two: create a dropin instance using that container (or a string
-        //   that functions as a query selector such as '#dropin-container')
-        braintree.dropin.create({
-            authorization: '{{ $clientToken }}',
-            container: document.getElementById('dropin-container'),
-            paypal: {
-                flow: 'vault'
-            }
-            // ...plus remaining configuration
-        }).then((dropinInstance) => {
-            // Use 'dropinInstance' here
-            // Methods documented at https://braintree.github.io/braintree-web-drop-in/docs/current/Dropin.html
-        }).catch((error) => {});
-    </script>
-
-    <script>
-        // Create a client.
         braintree.client.create({
-            authorization: '{{ $clientToken }}',
+            authorization: '{{ $clientToken }}'
         }, function(clientErr, clientInstance) {
-
-            // Stop if there was a problem creating the client.
-            // This could happen if there is a network error or if the authorization
-            // is invalid.
             if (clientErr) {
                 console.error('Error creating client:', clientErr);
                 return;
             }
 
-            // Create a PayPal Checkout component.
             braintree.paypalCheckout.create({
                 client: clientInstance
             }, function(paypalCheckoutErr, paypalCheckoutInstance) {
-
-                // Stop if there was a problem creating PayPal Checkout.
-                // This could happen if there was a network error or if it's incorrectly
-                // configured.
                 if (paypalCheckoutErr) {
                     console.error('Error creating PayPal Checkout:', paypalCheckoutErr);
                     return;
                 }
 
-                // Load the PayPal JS SDK (see Load the PayPal JS SDK section)
+                paypalCheckoutInstance.loadPayPalSDK({
+                    vault: true,
+                }, function() {
+                    paypal.Buttons({
+                        fundingSource: paypal.FUNDING.PAYPAL,
+                        createBillingAgreement: function() {
+                            return paypalCheckoutInstance.createPayment({
+                                flow: 'vault',
+                                billingAgreementDescription: 'Your subscription description'
+                            });
+                        },
+                        onApprove: function(data, actions) {
+                            return paypalCheckoutInstance.tokenizePayment(data,
+                                function(err, payload) {
+                                    document.getElementById('payment_method_nonce')
+                                        .value = payload.nonce;
+                                    document.getElementById('payment-form')
+                                .submit();
+                                });
+                        },
+                        onCancel: function(data) {
+                            console.log('PayPal payment canceled', JSON.stringify(data,
+                                0, 2));
+                        },
+                        onError: function(err) {
+                            console.error('PayPal error', err);
+                        }
+                    }).render('#paypal-button');
+                });
             });
-
         });
     </script>
 

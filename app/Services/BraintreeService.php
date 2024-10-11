@@ -10,7 +10,7 @@ use Braintree\Gateway;
 
 class BraintreeService
 {
-    private $gateway;
+    public $gateway;
     public function __construct()
     {
         $this->gateway = new Gateway([

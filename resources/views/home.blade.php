@@ -24,30 +24,109 @@
 
 <body class="font-sans antialiased">
 
-    <div class="container mx-auto px-4 py-8 text-center">
-        <h2 class="text-4xl font-semibold text-black text-center">Plans</h2>
-        <div class="flex flex-wrap md:flex-nowrap flex-col md:flex-row justify-center content-center gap-6 mt-8"
+    <div class="container px-4 py-8 mx-auto text-center">
+        <h2 class="text-4xl font-semibold text-center text-black">Plans</h2>
+        <div class="flex flex-col flex-wrap content-center justify-center gap-6 mt-8 md:flex-nowrap md:flex-row"
             x-data="{ selectedPlan: '{{ $plans->first()->paypal_plan_id ?? '0' }}' }">
             @foreach ($plans as $plan)
                 <div class="w-80 p-4 bg-[#FF2D20]/10 rounded-lg shadow-lg px-6 py-8 text-center cursor-pointer hover:bg-[#FF2D20]/20 transition duration-300"
                     x-on:click="selectedPlan = '{{ $plan->paypal_plan_id }}'; setPlanId(selectedPlan)"
                     x-bind:class="{ 'bg-[#FF2D20]/20 border border-[#FF2D20]/50': selectedPlan === '{{ $plan->paypal_plan_id }}' }">
                     <h3 class="text-xl font-bold text-[#FF2D20] mb-4 uppercase tracking-widest">{{ $plan->name }}</h3>
-                    <p class="text-gray-500 mb-4 text-sm">{{ $plan->description }}</p>
+                    <p class="mb-4 text-sm text-gray-500">{{ $plan->description }}</p>
                     <p class="text-[#FF2D20] mb-4 font-bold uppercase tracking-widest text-3xl">
                         {{ $plan->price }} USD</p>
                 </div>
             @endforeach
         </div>
-        <form id="payment-form" action="{{ route('pay') }}" method="post">
+        {{-- <form id="payment-form" action="{{ route('pay') }}" method="post">
+            @csrf
             <div id="paypal-button"></div>
             <input type="hidden" id="payment_method_nonce" name="payment_method_nonce">
             <input type="hidden" name="plan_id" value="nsvj">
-        </form>
+        </form> --}}
+        <div id="dropin-container"></div>
+        <button id="submit-button">Pay Now</button>
 
     </div>
 
     <script>
+        const button = document.querySelector('#submit-button');
+
+        fetch('/braintree/token')
+            .then(response => response.json())
+            .then(data => {
+                const clientToken = data.clientToken;
+
+                braintree.dropin.create({
+                    authorization: clientToken,
+                    container: '#dropin-container',
+                    paypal: {
+                        flow: 'vault',
+                        buttonStyle: {
+                            color: 'blue',
+                            shape: 'rect',
+                            size: 'medium'
+                        }
+                    },
+                    card: {
+                        cardholderName: {
+                            required: true
+                        },
+                        vault: {
+                            allowVaultCardOverride: true,
+                            vaultCard: true,
+                        }
+                    }
+                }, (createErr, instance) => {
+                    if (createErr) {
+                        console.error('Error creating Drop-in:', createErr);
+                        return;
+                    }
+
+                    button.addEventListener('click', () => {
+                        instance.requestPaymentMethod((err, payload) => {
+                            if (err) {
+                                console.error('Error requesting payment method:', err);
+                                return;
+                            }
+
+                            fetch('/braintree/process', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                    },
+                                    body: JSON.stringify({
+                                        payload: {
+                                            nonce: payload.nonce,
+                                            planId: 'nsvj'
+                                        }
+                                    })
+                                })
+                                .then(response => response.json())
+                                .then(result => {
+                                    if (result.success) {
+                                        console.log('Payment successful:', result);
+                                        // Handle successful payment
+                                    } else {
+                                        console.error('Payment failed:', result);
+                                        // Handle failed payment
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('Error processing payment:', error);
+                                });
+                        });
+                    });
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching client token:', error);
+            });
+    </script>
+
+    {{-- <script>
         braintree.client.create({
             authorization: '{{ $clientToken }}'
         }, function(clientErr, clientInstance) {
@@ -81,7 +160,7 @@
                                     document.getElementById('payment_method_nonce')
                                         .value = payload.nonce;
                                     document.getElementById('payment-form')
-                                .submit();
+                                        .submit();
                                 });
                         },
                         onCancel: function(data) {
@@ -95,7 +174,7 @@
                 });
             });
         });
-    </script>
+    </script> --}}
 
 </body>
 

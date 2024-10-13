@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Services\BraintreeService;
-use App\Services\PaypalService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Plan;
@@ -14,32 +13,30 @@ class HomeController extends Controller
 {
     public function index()
     {
-        // dd(Storage::get('my.jpg'));
         $plans = Cache::remember('plans', env('CACHE_EXPIRE_TIME'), function () {
             return Plan::all();
         });
 
-        // $paypalService = new PaypalService();
-
-        $braintreeService = new BraintreeService();
+        // $braintreeService = new BraintreeService();
 
         // Log::info('Creating Customer');
-        // $customer = $braintreeService->createCustomer('John', 'Doe', 'C9kQw@example.com');
-        // Log::debug($customer);
+        // $result = $braintreeService->createCustomer('John', 'Doe', 'C9kQw@example.com');
+        // Log::debug($result);
 
-        $customer = '83657761599';
-        Log::info('Retrieving Client Token');
-        $clientToken = $braintreeService->getClientToken($customer);
-        Log::debug($clientToken);
+        // $customer = '83657761599';
+        // Log::info('Retrieving Client Token');
+        // $clientToken = $braintreeService->getClientToken();
+        // Log::debug($clientToken);
 
 
-        return view('home', compact('plans', 'clientToken'));
+        return view('home', compact('plans'));
     }
 
     public function pay(Request $request)
     {
-        dd($request->all());
+        // dd($request->all());
         $data = $request->all();
+        Log::info($data);
         $nonce = $request->input('payment_method_nonce');
         $planId = $request->input('plan_id');
 
@@ -53,6 +50,9 @@ class HomeController extends Controller
             'paymentMethodNonce' => $nonce
         ]);
 
+
+        Log::info($customer);
+
         if ($customer->success) {
             $customerId = $customer->customer->id;
             $paymentMethodToken = $customer->customer->paymentMethods[0]->token;
@@ -61,6 +61,7 @@ class HomeController extends Controller
                 'paymentMethodToken' => $paymentMethodToken,
                 'planId' => $planId
             ]);
+            // Log::info($subscriptionResult);
 
             if ($subscriptionResult->success) {
                 echo "Subscription created successfully. Subscription ID: " . $subscriptionResult->subscription->id;
@@ -71,9 +72,6 @@ class HomeController extends Controller
             echo "Error creating customer: " . $customer->message;
         }
 
-        Log::info($data);
-        Log::info($customer);
-        Log::info($subscriptionResult);
         return view('home');
     }
 }

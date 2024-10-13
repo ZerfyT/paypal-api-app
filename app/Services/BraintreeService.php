@@ -21,11 +21,9 @@ class BraintreeService
         ]);
     }
 
-    public function getClientToken($customerId)
+    public function getClientToken($customerId = '')
     {
-        return $this->gateway->clientToken()->generate([
-            'customerId' => $customerId
-        ]);
+        return $this->gateway->clientToken()->generate();
     }
 
     public function createCustomer($firstName, $lastName, $email): string

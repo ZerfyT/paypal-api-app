@@ -17,11 +17,9 @@ class HomeController extends Controller
             return Plan::all();
         });
 
-        // $braintreeService = new BraintreeService();
-
-        // Log::info('Creating Customer');
-        // $result = $braintreeService->createCustomer('John', 'Doe', 'C9kQw@example.com');
-        // Log::debug($result);
+        $payments = Cache::remember('payments', env('CACHE_EXPIRE_TIME'), function () {
+            return \App\Models\Payment::all();
+        });
 
         // $customer = '83657761599';
         // Log::info('Retrieving Client Token');
@@ -29,49 +27,49 @@ class HomeController extends Controller
         // Log::debug($clientToken);
 
 
-        return view('home', compact('plans'));
+        return view('home', compact('plans', 'payments'));
     }
 
-    public function pay(Request $request)
-    {
-        // dd($request->all());
-        $data = $request->all();
-        Log::info($data);
-        $nonce = $request->input('payment_method_nonce');
-        $planId = $request->input('plan_id');
+    // public function pay(Request $request)
+    // {
+    //     // dd($request->all());
+    //     $data = $request->all();
+    //     Log::info($data);
+    //     $nonce = $request->input('payment_method_nonce');
+    //     $planId = $request->input('plan_id');
 
-        $braintreeService = new BraintreeService();
-        $gateway = $braintreeService->gateway;
+    //     $braintreeService = new BraintreeService();
+    //     $gateway = $braintreeService->gateway;
 
-        $customer = $gateway->customer()->create([
-            'firstName' => 'John',
-            'lastName' => 'Doe',
-            'email' => 'john.doe@example.com',
-            'paymentMethodNonce' => $nonce
-        ]);
+    //     $customer = $gateway->customer()->create([
+    //         'firstName' => 'John',
+    //         'lastName' => 'Doe',
+    //         'email' => 'john.doe@example.com',
+    //         'paymentMethodNonce' => $nonce
+    //     ]);
 
 
-        Log::info($customer);
+    //     Log::info($customer);
 
-        if ($customer->success) {
-            $customerId = $customer->customer->id;
-            $paymentMethodToken = $customer->customer->paymentMethods[0]->token;
+    //     if ($customer->success) {
+    //         $customerId = $customer->customer->id;
+    //         $paymentMethodToken = $customer->customer->paymentMethods[0]->token;
 
-            $subscriptionResult = $gateway->subscription()->create([
-                'paymentMethodToken' => $paymentMethodToken,
-                'planId' => $planId
-            ]);
-            // Log::info($subscriptionResult);
+    //         $subscriptionResult = $gateway->subscription()->create([
+    //             'paymentMethodToken' => $paymentMethodToken,
+    //             'planId' => $planId
+    //         ]);
+    //         // Log::info($subscriptionResult);
 
-            if ($subscriptionResult->success) {
-                echo "Subscription created successfully. Subscription ID: " . $subscriptionResult->subscription->id;
-            } else {
-                echo "Error creating subscription: " . $subscriptionResult->message;
-            }
-        } else {
-            echo "Error creating customer: " . $customer->message;
-        }
+    //         if ($subscriptionResult->success) {
+    //             echo "Subscription created successfully. Subscription ID: " . $subscriptionResult->subscription->id;
+    //         } else {
+    //             echo "Error creating subscription: " . $subscriptionResult->message;
+    //         }
+    //     } else {
+    //         echo "Error creating customer: " . $customer->message;
+    //     }
 
-        return view('home');
-    }
+    //     return view('home');
+    // }
 }

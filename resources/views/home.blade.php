@@ -39,14 +39,30 @@
                 </div>
             @endforeach
         </div>
-        {{-- <form id="payment-form" action="{{ route('pay') }}" method="post">
-            @csrf
-            <div id="paypal-button"></div>
-            <input type="hidden" id="payment_method_nonce" name="payment_method_nonce">
-            <input type="hidden" name="plan_id" value="nsvj">
-        </form> --}}
-        <div id="dropin-container"></div>
-        <button id="submit-button">Pay Now</button>
+
+        <!-- Drop-in container -->
+        <div class="mt-8">
+            <h3 class="text-xl font-bold text-black mt-8">Payment Method</h3>
+            <div id="dropin-container"></div>
+            <button id="submit-button" class="bg-[#FF2D20] text-white font-bold py-2 px-4 rounded" name="submit"
+                type="submit">Pay Now</button>
+        </div>
+        <!-- End Drop-in container -->
+
+        <!-- Payment History -->
+        <div class="mt-8">
+            <h3 class="text-xl font-bold text-black">Payment History</h3>
+            @if ($payments->count() > 0)
+                <ul>
+                    @foreach ($payments as $payment)
+                        <li>{{ $payment->created_at }}</li>
+                    @endforeach
+                </ul>
+            @else
+                <p>No payments found.</p>
+            @endif
+        </div>
+        <!-- End Payment History -->
 
     </div>
 
@@ -57,6 +73,7 @@
             .then(response => response.json())
             .then(data => {
                 const clientToken = data.clientToken;
+                console.log(clientToken);
 
                 braintree.dropin.create({
                     authorization: clientToken,
@@ -100,7 +117,7 @@
                                     body: JSON.stringify({
                                         payload: {
                                             nonce: payload.nonce,
-                                            planId: 'nsvj'
+                                            planId: '{{ env('BRAINTREE_PLAN_1_ID') }}'
                                         }
                                     })
                                 })
@@ -125,56 +142,6 @@
                 console.error('Error fetching client token:', error);
             });
     </script>
-
-    {{-- <script>
-        braintree.client.create({
-            authorization: '{{ $clientToken }}'
-        }, function(clientErr, clientInstance) {
-            if (clientErr) {
-                console.error('Error creating client:', clientErr);
-                return;
-            }
-
-            braintree.paypalCheckout.create({
-                client: clientInstance
-            }, function(paypalCheckoutErr, paypalCheckoutInstance) {
-                if (paypalCheckoutErr) {
-                    console.error('Error creating PayPal Checkout:', paypalCheckoutErr);
-                    return;
-                }
-
-                paypalCheckoutInstance.loadPayPalSDK({
-                    vault: true,
-                }, function() {
-                    paypal.Buttons({
-                        fundingSource: paypal.FUNDING.PAYPAL,
-                        createBillingAgreement: function() {
-                            return paypalCheckoutInstance.createPayment({
-                                flow: 'vault',
-                                billingAgreementDescription: 'Your subscription description'
-                            });
-                        },
-                        onApprove: function(data, actions) {
-                            return paypalCheckoutInstance.tokenizePayment(data,
-                                function(err, payload) {
-                                    document.getElementById('payment_method_nonce')
-                                        .value = payload.nonce;
-                                    document.getElementById('payment-form')
-                                        .submit();
-                                });
-                        },
-                        onCancel: function(data) {
-                            console.log('PayPal payment canceled', JSON.stringify(data,
-                                0, 2));
-                        },
-                        onError: function(err) {
-                            console.error('PayPal error', err);
-                        }
-                    }).render('#paypal-button');
-                });
-            });
-        });
-    </script> --}}
 
 </body>
 

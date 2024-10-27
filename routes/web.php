@@ -9,7 +9,9 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::post('/pay', [HomeController::class, 'pay'])->name('pay');
 
 
-Route::get('/braintree/token', [BraintreeController::class, 'getClientToken']);
-Route::post('/braintree/process', [BraintreeController::class, 'processPayment']);
+Route::controller(BraintreeController::class)->group(function () {
+    Route::get('/braintree/token', 'getClientToken')->name('braintree.token');
+    Route::post('/braintree/process', 'processPayment')->name('braintree.process');
+});
 
 Route::post('/braintree/webhook', [WebhookController::class, 'handleWebhook']);

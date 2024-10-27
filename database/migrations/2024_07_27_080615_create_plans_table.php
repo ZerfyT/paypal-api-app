@@ -20,8 +20,7 @@ return new class extends Migration {
             $table->integer('interval_count');
             $table->integer('trial_period_days')->default(0);
             $table->string('status')->default('active');
-            $table->string('paypal_plan_id')->nullable();
-            $table->string('stripe_plan_id')->nullable();
+            $table->string('braintree_plan_id')->nullable();
             $table->timestamps();
         });
     }
